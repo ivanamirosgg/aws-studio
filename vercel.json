@@ -1,0 +1,5 @@
+{
+  "rewrites": [
+    { "source": "/", "destination": "/aws_cloud_practitioner_estudio.html" }
+  ]
+}
