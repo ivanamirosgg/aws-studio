@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AWS Cloud Practitioner — Sala de Estudio</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  :root{
+    --bg: #0B1220;
+    --surface: #131D30;
+    --surface-raised: #1A2540;
+    --border: #26344A;
+    --border-soft: #1E2A40;
+    --amber: #F2A65A;
+    --amber-dim: #7A5A34;
+    --teal: #4FD9C8;
+    --teal-dim: #1F4A45;
+    --coral: #F4735B;
+    --coral-dim: #4A2620;
+    --text: #EAF0F6;
+    --muted: #8FA1B8;
+    --muted-2: #5D7089;
+  }
+
+  *{ box-sizing: border-box; }
+
+  html,body{
+    margin:0; padding:0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    min-height: 100vh;
+  }
+
+  body{
+    background-image:
+      linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+    background-size: 34px 34px;
+    display:flex;
+    justify-content:center;
+    padding: 28px 16px 60px;
+  }
+
+  .app{ width:100%; max-width: 780px; }
+  .mono{ font-family: 'IBM Plex Mono', monospace; }
+
+  header{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap: 16px;
+    margin-bottom: 22px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .brand h1{ font-size: 1.35rem; margin: 0 0 4px 0; font-weight: 700; letter-spacing: -0.01em; }
+  .brand p{ margin:0; color: var(--muted); font-size: 0.82rem; }
+  .brand .tag{ color: var(--amber); font-family:'IBM Plex Mono', monospace; font-size: 0.72rem; letter-spacing: 0.03em; }
+  .clf-badge{
+    font-family:'IBM Plex Mono', monospace; font-size: 0.68rem; color: var(--amber);
+    border: 1px solid var(--amber-dim); padding: 5px 10px; border-radius: 3px;
+    background: rgba(242,166,90,0.06); white-space: nowrap; height: fit-content;
+  }
+
+  .cat-scroll{ display:flex; gap:8px; overflow-x:auto; padding-bottom: 6px; margin-bottom: 18px; }
+  .cat-scroll::-webkit-scrollbar{ height: 4px; }
+  .cat-scroll::-webkit-scrollbar-thumb{ background: var(--border); border-radius: 2px; }
+  .chip{
+    flex: 0 0 auto; font-family:'IBM Plex Mono', monospace; font-size: 0.72rem;
+    padding: 7px 12px; border-radius: 20px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--muted); cursor: pointer;
+    transition: all 0.15s ease; white-space: nowrap;
+  }
+  .chip:hover{ border-color: var(--muted-2); color: var(--text); }
+  .chip.active{ background: var(--amber); border-color: var(--amber); color: #1A1204; font-weight: 600; }
+
+  .stats{ display:grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 22px; }
+  .stat{ background: var(--surface); border: 1px solid var(--border-soft); border-radius: 8px; padding: 10px 12px; }
+  .stat .num{ font-size: 1.25rem; font-weight: 700; line-height:1; display:block; margin-bottom: 4px; }
+  .stat .lbl{ font-family:'IBM Plex Mono', monospace; font-size: 0.62rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .stat.streak .num{ color: var(--amber); }
+  .stat.mastered .num{ color: var(--teal); }
+  .stat.review .num{ color: var(--coral); }
+
+  .progress-track{ height: 5px; background: var(--surface); border-radius: 4px; overflow: hidden; margin-bottom: 26px; border: 1px solid var(--border-soft); }
+  .progress-fill{ height: 100%; background: linear-gradient(90deg, var(--amber), var(--teal)); width: 0%; transition: width 0.35s ease; }
+
+  .stage{ perspective: 1600px; margin-bottom: 20px; }
+  .card{
+    position: relative; width: 100%; min-height: 300px;
+    transform-style: preserve-3d; transition: transform 0.5s cubic-bezier(.2,.7,.3,1); cursor: pointer;
+  }
+  .card.flipped{ transform: rotateY(180deg); }
+  .face{
+    position:absolute; inset:0; backface-visibility: hidden; border-radius: 14px;
+    border: 1px solid var(--border); padding: 28px 26px; display:flex; flex-direction: column; justify-content: center;
+  }
+  .face.front{ background: linear-gradient(160deg, var(--surface-raised), var(--surface)); }
+  .face.back{ background: linear-gradient(160deg, #17251F, #101B22); transform: rotateY(180deg); border-color: var(--teal-dim); }
+  .face .kicker{ font-family:'IBM Plex Mono', monospace; font-size: 0.68rem; color: var(--amber); letter-spacing: 0.03em; margin-bottom: 14px; }
+  .face.back .kicker{ color: var(--teal); }
+  .face .body-text{ font-size: 1.18rem; line-height: 1.5; font-weight: 500; }
+  .face.back .body-text{ font-size: 1.05rem; font-weight: 400; color: #DCEDEB; }
+  .face .hint{ position:absolute; bottom: 18px; right: 22px; font-family:'IBM Plex Mono', monospace; font-size: 0.68rem; color: var(--muted-2); }
+
+  .badge-tag{
+    display:inline-block; margin-top: 16px; font-family:'IBM Plex Mono', monospace; font-size: 0.65rem;
+    padding: 4px 9px; border-radius: 12px; width: fit-content; border: 1px solid var(--border); color: var(--muted);
+  }
+  .badge-tag.trap{ color: var(--coral); border-color: var(--coral-dim); background: rgba(244,115,91,0.08); }
+  .badge-tag.mnemo{ color: #C9A6F2; border-color: #4A3A5C; background: rgba(201,166,242,0.07); }
+  .badge-tag.rule{ color: var(--amber); border-color: var(--amber-dim); background: rgba(242,166,90,0.07); }
+
+  .mc-mode-tag{
+    position:absolute; top:16px; right:16px;
+    font-family:'IBM Plex Mono', monospace; font-size:0.62rem;
+    color: var(--teal); border:1px solid var(--teal-dim); background: rgba(79,217,200,0.08);
+    padding: 3px 8px; border-radius: 10px;
+  }
+
+  .mc-panel{
+    background: linear-gradient(160deg, var(--surface-raised), var(--surface));
+    border: 1px solid var(--border); border-radius: 14px; padding: 26px 24px; min-height: 300px;
+    position: relative;
+  }
+  .mc-panel .kicker{ font-family:'IBM Plex Mono', monospace; font-size: 0.68rem; color: var(--teal); letter-spacing: 0.03em; margin-bottom: 14px; }
+  .mc-panel .body-text{ font-size: 1.12rem; line-height: 1.45; font-weight: 500; margin-bottom: 20px; }
+  .mc-options{ display:flex; flex-direction:column; gap:9px; }
+  .mc-option{
+    text-align:left; font-family:'Space Grotesk', sans-serif; font-size: 0.9rem; font-weight: 500;
+    padding: 12px 14px; border-radius: 9px; border: 1px solid var(--border); background: var(--surface);
+    color: var(--text); cursor: pointer; transition: all 0.15s ease;
+  }
+  .mc-option:hover:not(:disabled){ border-color: var(--amber-dim); background: rgba(242,166,90,0.06); }
+  .mc-option:disabled{ cursor:default; }
+  .mc-option.correct-answer{ border-color: var(--teal); background: rgba(79,217,200,0.14); color: #C9FBF3; }
+  .mc-option.wrong-answer{ border-color: var(--coral); background: rgba(244,115,91,0.14); color: #FFD9D1; }
+  .mc-option.dimmed{ opacity: 0.45; }
+
+  .mc-feedback{
+    margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-soft);
+  }
+  .mc-feedback .verdict{ font-weight: 700; margin-bottom: 8px; font-size: 0.95rem; }
+  .mc-feedback .verdict.ok{ color: var(--teal); }
+  .mc-feedback .verdict.bad{ color: var(--coral); }
+  .mc-feedback .explain{ font-size: 0.92rem; color: var(--muted); line-height: 1.5; }
+
+  .controls{ display:flex; gap: 10px; margin-bottom: 10px; margin-top: 16px; }
+  .btn{
+    flex:1; font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 0.92rem;
+    padding: 14px 10px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text); cursor: pointer; transition: transform 0.1s ease, background 0.15s ease;
+  }
+  .btn:active{ transform: scale(0.97); }
+  .btn.ghost{ background: transparent; color: var(--muted); }
+  .btn.ghost:hover{ color: var(--text); }
+  .btn.review-btn{ border-color: var(--coral-dim); }
+  .btn.review-btn:hover{ background: rgba(244,115,91,0.1); }
+  .btn.know-btn{ border-color: var(--teal-dim); }
+  .btn.know-btn:hover{ background: rgba(79,217,200,0.1); }
+  .btn.flip-btn{ width:100%; background: var(--amber); color: #1A1204; border: none; }
+  .btn.flip-btn:hover{ filter: brightness(1.08); }
+  .btn.next-btn{ width:100%; background: var(--teal); color: #052622; border:none; }
+  .btn.next-btn:hover{ filter: brightness(1.08); }
+
+  .util-row{ display:flex; justify-content: space-between; align-items:center; margin-top: 6px; }
+  .util-row button{
+    background:none; border:none; color: var(--muted-2); font-family:'IBM Plex Mono', monospace;
+    font-size: 0.72rem; cursor:pointer; text-decoration: underline;
+  }
+  .util-row button:hover{ color: var(--muted); }
+
+  .end-screen{ text-align:center; padding: 40px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; }
+  .end-screen .big-score{ font-size: 2.6rem; font-weight: 700; color: var(--amber); margin: 6px 0 2px; }
+  .end-screen p{ color: var(--muted); font-size: 0.9rem; margin: 4px 0 24px; }
+  .end-actions{ display:flex; flex-direction: column; gap: 10px; max-width: 320px; margin: 0 auto; }
+
+  .empty-note{ text-align:center; color: var(--muted); padding: 60px 20px; font-size: 0.9rem; }
+
+  @media (max-width: 480px){
+    .stats{ grid-template-columns: repeat(2,1fr); }
+    header{ flex-direction: column; }
+    .clf-badge{ align-self: flex-start; }
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+
+<script>
+/* ---------------- DATA ---------------- */
+const CATEGORIES = [
+  { id: 'fund', name: 'Fundamentos' },
+  { id: 'resp', name: 'Resp. Compartida' },
+  { id: 'infra', name: 'Infra Global' },
+  { id: 'compute', name: 'Cómputo' },
+  { id: 'storage', name: 'Almacenamiento' },
+  { id: 'db', name: 'Bases de Datos' },
+  { id: 'net', name: 'Redes' },
+  { id: 'mig', name: 'Migración' },
+  { id: 'sec', name: 'Seguridad' },
+  { id: 'integ', name: 'Integración & AI/ML' },
+  { id: 'dev', name: 'DevTools & Gobierno' },
+  { id: 'price', name: 'Precios' },
+  { id: 'support', name: 'Soporte' },
+];
+
+const CARDS = [
+// FUNDAMENTOS
+{cat:'fund', q:'¿Cuál es la definición oficial de AWS de "cloud computing"?', a:'La entrega bajo demanda de recursos de TI a través de internet con pago por uso.',
+  mc:{correct:'Entrega bajo demanda de TI por internet con pago por uso', options:['Entrega bajo demanda de TI por internet con pago por uso','Comprar servidores físicos y mantenerlos en tu oficina','Un contrato anual obligatorio de hardware','Alquilar oficinas en distintos países']}},
+{cat:'fund', q:'En el modelo IaaS, ¿qué controla el cliente y qué controla AWS?', a:'AWS controla hardware físico, edificios y virtualización. El cliente controla el SO, parches, aplicaciones, datos y red lógica. Ejemplo: Amazon EC2.'},
+{cat:'fund', q:'"Menor costo por unidad al comprar en volumen" — ¿a cuál de las 6 ventajas de la nube corresponde?', a:'Economías de escala — AWS compra masivo y traslada el ahorro al cliente (analogía Costco).',
+  mc:{correct:'Economías de escala', options:['Economías de escala','Elasticidad','Alta disponibilidad','CAPEX a OPEX']}},
+{cat:'fund', q:'Una app escala de 5 a 20 servidores en un pico y regresa a 5 sola, sin intervención humana. ¿Qué ventaja de la nube es?', a:'Dejar de adivinar la capacidad necesaria → Elasticidad.', badge:'trap',
+  mc:{correct:'Elasticidad', options:['Elasticidad','Escalabilidad horizontal','Alta disponibilidad','Multi-tenancy']}},
+{cat:'fund', q:'¿Cuál es la diferencia entre nube pública, privada e híbrida?', a:'Pública: infraestructura del proveedor, compartida (AWS). Privada: de una sola organización, más control y costo. Híbrida: combina ambas (Direct Connect, Storage Gateway, Outposts).'},
+{cat:'fund', q:'¿Qué es "multi-tenancy" en la nube pública?', a:'Múltiples clientes comparten la infraestructura física de AWS, pero están completamente aislados entre sí por virtualización y controles de seguridad.',
+  mc:{correct:'Aislados por virtualización y controles de seguridad', options:['Aislados por virtualización y controles de seguridad','Cada cliente tiene su propio datacenter físico','Los clientes comparten un solo usuario y contraseña','AWS asigna un país exclusivo por cliente']}},
+{cat:'fund', q:'En SaaS, ¿qué controla el cliente? Da un ejemplo AWS.', a:'Solo sus datos y configuraciones de usuario. AWS gestiona todo lo técnico. Ejemplos: Amazon QuickSight, Amazon WorkMail.',
+  mc:{correct:'Solo sus datos y configuración de usuario', options:['Solo sus datos y configuración de usuario','El sistema operativo y los parches','El hardware físico del datacenter','La red troncal global de AWS']}},
+
+// RESPONSABILIDAD COMPARTIDA
+{cat:'resp', q:'Regla de oro del Modelo de Responsabilidad Compartida.', a:'AWS = seguridad DE la nube (infraestructura física, hardware, red). Cliente = seguridad EN la nube (datos, accesos, configuración, parches del SO en IaaS).', badge:'rule',
+  mc:{correct:'AWS = de la nube · Cliente = en la nube', options:['AWS = de la nube · Cliente = en la nube','AWS = en la nube · Cliente = de la nube','AWS es responsable de todo siempre','El cliente es responsable de todo siempre']}},
+{cat:'resp', q:'¿Quién parchea el sistema operativo en Amazon EC2?', a:'El cliente — EC2 es IaaS.', badge:'trap',
+  mc:{correct:'El cliente', options:['El cliente','AWS','Ambos por partes iguales','Nadie, se actualiza solo']}},
+{cat:'resp', q:'¿Quién parchea el motor de base de datos en Amazon RDS?', a:'AWS — RDS es un servicio administrado (PaaS).', badge:'trap',
+  mc:{correct:'AWS', options:['AWS','El cliente','Ambos por partes iguales','Un tercero certificado']}},
+{cat:'resp', q:'En AWS Lambda (serverless), ¿quién es responsable del escalado?', a:'AWS — el cliente solo escribe el código; AWS gestiona hardware, SO, runtime y escalado.',
+  mc:{correct:'AWS', options:['AWS','El cliente','Ambos','Un Auto Scaling Group manual']}},
+{cat:'resp', q:'¿Qué es siempre responsabilidad de AWS, sin importar el servicio?', a:'La seguridad física de los centros de datos y el hardware subyacente.',
+  mc:{correct:'La seguridad física de los datacenters y el hardware', options:['La seguridad física de los datacenters y el hardware','El cifrado de los datos del cliente','Los permisos IAM de los usuarios','El código de las aplicaciones del cliente']}},
+{cat:'resp', q:'En Amazon S3, ¿quién decide si los datos se cifran y con qué clave?', a:'El cliente — AWS aporta durabilidad e infraestructura, pero el cliente controla cifrado, políticas de acceso y versionado.',
+  mc:{correct:'El cliente decide si cifra y con qué clave', options:['El cliente decide si cifra y con qué clave','AWS cifra todo automáticamente sin opción','Nadie puede cifrar datos en S3','Solo el soporte Enterprise puede cifrar']}},
+{cat:'resp', q:'¿Qué certificaciones hereda automáticamente una empresa al usar la infraestructura de AWS?', a:'ISO 27001, SOC 1/2/3, PCI DSS y HIPAA.',
+  mc:{correct:'ISO 27001, SOC 1/2/3, PCI DSS y HIPAA', options:['ISO 27001, SOC 1/2/3, PCI DSS y HIPAA','Solo ISO 9001','Ninguna, cada cliente debe certificarse solo','GDPR exclusivamente']}},
+
+// INFRAESTRUCTURA GLOBAL
+{cat:'infra', q:'¿Cuántas AZs mínimo tiene una Región de AWS?', a:'Mínimo 2 (generalmente 3 o más).',
+  mc:{correct:'Mínimo 2', options:['Mínimo 2','Mínimo 1','Mínimo 5','Mínimo 10']}},
+{cat:'infra', q:'¿Qué componente de la infraestructura AWS son puntos de caché en más de 90 ciudades, usados por CloudFront, Route 53, Shield y WAF?', a:'Edge Locations — más de 400 ubicaciones que acercan el contenido al usuario final.',
+  mc:{correct:'Edge Locations', options:['Edge Locations','Availability Zones','Local Zones','Regiones']}},
+{cat:'infra', q:'Diferencia entre Alta Disponibilidad, Elasticidad y Escalabilidad.', a:'Alta Disponibilidad: sigue funcionando aunque algo falle. Elasticidad: se ajusta sola a la demanda. Escalabilidad: capacidad de crecer (vertical u horizontal).', badge:'trap'},
+{cat:'infra', q:'¿Qué son las Local Zones y Wavelength?', a:'Local Zone: extensión de una Región en una ciudad, latencia <10ms. Wavelength: infraestructura en redes 5G, latencia <5ms (IoT, realidad aumentada).'},
+{cat:'infra', q:'¿Cuál es la diferencia entre escalado vertical y horizontal?', a:'Vertical (Scale Up): más CPU/RAM al mismo servidor, con límites físicos. Horizontal (Scale Out): más instancias idénticas, sin límites prácticos — AWS prefiere este modelo.'},
+{cat:'infra', q:'¿Cuáles son los 4 factores para elegir una Región de AWS?', a:'Cumplimiento legal / residencia de datos, latencia hacia usuarios, disponibilidad de servicios en esa región, y precio.'},
+{cat:'infra', q:'¿Por qué son críticas las AZs para un e-commerce?', a:'Si una AZ falla (terremoto, incendio, corte de energía), las otras siguen funcionando — evita que una caída de horas cueste más que diseñar Multi-AZ.'},
+
+// CÓMPUTO
+{cat:'compute', q:'¿Cuál servicio de cómputo es serverless, cobra por milisegundo y tiene máximo 15 min de ejecución?', a:'AWS Lambda.',
+  mc:{correct:'AWS Lambda', options:['AWS Lambda','Amazon EC2','AWS Fargate','Amazon Lightsail']}},
+{cat:'compute', q:'Una empresa con cargas de big data interrumpibles busca el mayor ahorro en EC2. ¿Qué modelo de compra usa?', a:'Spot Instances — hasta 90% de descuento; interrumpibles con 2 minutos de aviso.',
+  mc:{correct:'Spot Instances', options:['Spot Instances','Reserved Instances','On-Demand','Dedicated Host']}},
+{cat:'compute', q:'¿Cuál es la diferencia entre Reserved Instances y Savings Plans?', a:'RI reserva un tipo de instancia específico (tipo+región+SO). Savings Plans reserva un monto en $/hora, aplicable a cualquier tipo/región de EC2, Lambda y Fargate — más flexible.'},
+{cat:'compute', q:'¿Qué modelo de compra de EC2 te permite elegir exactamente qué servidor físico usas, ideal para licencias por socket/núcleo (BYOL)?', a:'Dedicated Host. La Dedicated Instance, en cambio, garantiza hardware exclusivo pero sin que tú elijas el servidor físico específico.', badge:'trap',
+  mc:{correct:'Dedicated Host', options:['Dedicated Host','Dedicated Instance','Spot Instance','Savings Plan']}},
+{cat:'compute', q:'Diferencia entre ECS, EKS y Fargate.', a:'ECS: orquestación de contenedores propia de AWS (simple). EKS: Kubernetes administrado (portabilidad). Fargate: motor serverless que funciona con ambos — no gestionas instancias EC2.'},
+{cat:'compute', q:'¿Cuándo usar AWS Batch en vez de Lambda?', a:'Batch: procesos largos (horas), alto consumo de CPU/memoria, sin límite de tiempo. Lambda: procesos cortos (máx. 15 min), reactivos a eventos.'},
+{cat:'compute', q:'¿Qué servicio orquesta múltiples Lambdas en un flujo de trabajo visual, con orden, condiciones y manejo de errores?', a:'AWS Step Functions.',
+  mc:{correct:'AWS Step Functions', options:['AWS Step Functions','Amazon EventBridge','AWS Batch','Amazon SQS']}},
+{cat:'compute', q:'¿Qué diferencia a AWS Compute Optimizer de Trusted Advisor?', a:'Compute Optimizer usa ML para recomendaciones de rightsizing específicas de cómputo (EC2, Lambda, EBS). Trusted Advisor revisa ampliamente 5 categorías.'},
+{cat:'compute', q:'Auto Scaling vs. Elastic Load Balancer — ¿cuál hace qué?', a:'Auto Scaling agrega/quita instancias según demanda. ELB distribuye el tráfico entre las instancias existentes. Suelen trabajar juntos.', badge:'trap'},
+
+// ALMACENAMIENTO
+{cat:'storage', q:'¿Cuál es la clase de S3 más barata para retención de años, con acceso casi nulo?', a:'S3 Glacier Deep Archive — recuperación en 12-48 horas, la más económica.',
+  mc:{correct:'S3 Glacier Deep Archive', options:['S3 Glacier Deep Archive','S3 Glacier Flexible Retrieval','S3 One Zone-IA','S3 Standard-IA']}},
+{cat:'storage', q:'Trampa de S3 One Zone-IA.', a:'Replica en solo 1 AZ (las demás clases usan mínimo 3 AZs) — más barato pero con riesgo de pérdida si esa AZ falla. No usar para datos críticos.', badge:'trap'},
+{cat:'storage', q:'Diferencia clave entre EBS y EFS.', a:'EBS: disco persistente conectado a UNA sola EC2 a la vez. EFS: sistema de archivos de red que múltiples EC2 pueden montar simultáneamente.'},
+{cat:'storage', q:'¿Cuál es la diferencia entre EBS e Instance Store?', a:'EBS es persistente y sobrevive al apagar/eliminar la EC2. Instance Store es efímero — se pierde si la instancia se detiene o falla.'},
+{cat:'storage', q:'¿Qué conjunto de dispositivos físicos usarías si transferir tus datos por internet tardaría más de una semana (ej. 80TB a 1Gbps)?', a:'AWS Snow Family — los dispositivos tienen cifrado de hardware de 256 bits.',
+  mc:{correct:'AWS Snow Family', options:['AWS Snow Family','AWS DataSync','AWS Direct Connect','AWS Storage Gateway']}},
+{cat:'storage', q:'¿Qué servicio ofrece un sistema de archivos compartido compatible con Windows y Active Directory (SMB)?', a:'FSx for Windows File Server — para empresas con apps Windows o file shares corporativos.',
+  mc:{correct:'FSx for Windows File Server', options:['FSx for Windows File Server','FSx for Lustre','Amazon EFS','FSx for NetApp ONTAP']}},
+{cat:'storage', q:'Diferencia entre AWS Storage Gateway y AWS DataSync.', a:'Storage Gateway: puente híbrido on-premises–AWS (File/Volume/Tape Gateway). DataSync: transferencia/sincronización continua de archivos por internet cuando el ancho de banda alcanza.'},
+{cat:'storage', q:'¿Qué durabilidad ofrece Amazon S3?', a:'99.999999999% (11 nueves).',
+  mc:{correct:'99.999999999% (11 nueves)', options:['99.999999999% (11 nueves)','99.9% (3 nueves)','99.99999% (7 nueves)','100% garantizado']}},
+
+// BASES DE DATOS
+{cat:'db', q:'¿Qué base de datos de AWS es NoSQL serverless con latencia en milisegundos a cualquier escala?', a:'Amazon DynamoDB — puede manejar más de 20 millones de solicitudes por segundo.',
+  mc:{correct:'Amazon DynamoDB', options:['Amazon DynamoDB','Amazon Aurora','Amazon RDS','Amazon Redshift']}},
+{cat:'db', q:'¿Qué base de datos ofrece 6 copias replicadas en 3 AZs y hasta 5x el rendimiento de MySQL estándar?', a:'Amazon Aurora — compatible con MySQL y PostgreSQL, con recuperación automática y Aurora Serverless para cargas variables.',
+  mc:{correct:'Amazon Aurora', options:['Amazon Aurora','Amazon RDS','Amazon DynamoDB','Amazon Redshift']}},
+{cat:'db', q:'¿Qué servicio se usa para OLAP (análisis histórico masivo, business intelligence)?', a:'Amazon Redshift. OLTP (transacciones en tiempo real) usa RDS/Aurora en cambio.',
+  mc:{correct:'Amazon Redshift', options:['Amazon Redshift','Amazon RDS','Amazon Aurora','Amazon DynamoDB']}},
+{cat:'db', q:'¿Qué servicio es un caché en memoria para DynamoDB que reduce la latencia de milisegundos a microsegundos?', a:'Amazon DAX (DynamoDB Accelerator).',
+  mc:{correct:'Amazon DAX', options:['Amazon DAX','Amazon ElastiCache','Amazon Athena','Amazon Redshift']}},
+{cat:'db', q:'Una empresa quiere ejecutar SQL directamente sobre logs guardados en S3 sin gestionar servidores. ¿Qué servicio usa?', a:'Amazon Athena — serverless, paga por datos escaneados (~$5/TB), no almacena los datos.',
+  mc:{correct:'Amazon Athena', options:['Amazon Athena','AWS Glue','Amazon EMR','Amazon Redshift']}},
+{cat:'db', q:'¿Cuál es la diferencia entre Athena, Glue y EMR?', a:'Athena: consultas SQL ad-hoc sobre S3. Glue: ETL serverless para preparar/limpiar datos. EMR: procesamiento masivo distribuido con Spark/Hadoop.', badge:'trap'},
+{cat:'db', q:'¿Para qué sirven Amazon Neptune y Amazon QLDB?', a:'Neptune: base de datos de grafos (relaciones complejas, detección de fraude). QLDB: libro mayor inmutable para auditoría (⚠️ descontinuado, fin de soporte 31-jul-2025).'},
+{cat:'db', q:'¿Qué función replica automáticamente una base de datos RDS en una segunda AZ para failover transparente si la principal falla?', a:'RDS Multi-AZ.',
+  mc:{correct:'RDS Multi-AZ', options:['RDS Multi-AZ','Aurora Global Database','DynamoDB Global Tables','Read Replicas manuales']}},
+
+// REDES
+{cat:'net', q:'Diferencia entre Security Group y NACL.', a:'Security Group: stateful, nivel instancia, solo reglas ALLOW. NACL: stateless, nivel subred, ALLOW y DENY, requiere reglas explícitas de entrada Y salida.', badge:'trap'},
+{cat:'net', q:'¿Qué hace que una subred sea "pública" en AWS?', a:'Que su tabla de rutas tenga una entrada que apunte al Internet Gateway (IGW).',
+  mc:{correct:'Que su tabla de rutas apunte al Internet Gateway', options:['Que su tabla de rutas apunte al Internet Gateway','Que tenga una IP pública fija','Que esté en la primera AZ de la región','Que use HTTPS por defecto']}},
+{cat:'net', q:'¿Qué Load Balancer opera en Capa 7 y rutea por URLs, headers y cookies?', a:'Application Load Balancer (ALB) — para apps web, APIs REST y microservicios. El NLB opera en Capa 4 (TCP/UDP).',
+  mc:{correct:'Application Load Balancer (ALB)', options:['Application Load Balancer (ALB)','Network Load Balancer (NLB)','Classic Load Balancer (CLB)','Gateway Load Balancer']}},
+{cat:'net', q:'¿Qué servicio optimiza la ruta de red sin cachear contenido, usando 2 IPs Anycast estáticas?', a:'AWS Global Accelerator — a diferencia de CloudFront, no cachea, solo enruta por la red privada de AWS.', badge:'rule',
+  mc:{correct:'AWS Global Accelerator', options:['AWS Global Accelerator','Amazon CloudFront','Amazon Route 53','AWS Direct Connect']}},
+{cat:'net', q:'¿Qué servicio usa una línea física dedicada y privada entre tu datacenter y AWS?', a:'AWS Direct Connect — 1 a 100 Gbps, baja latencia consistente, pero implementación de semanas/meses. AWS VPN usa internet público (más rápido de implementar, pero variable).',
+  mc:{correct:'AWS Direct Connect', options:['AWS Direct Connect','AWS VPN','AWS PrivateLink','AWS Transit Gateway']}},
+{cat:'net', q:'¿Qué componente permite a recursos en subredes privadas salir a internet (ej. actualizaciones) sin permitir conexiones entrantes directas?', a:'NAT Gateway.',
+  mc:{correct:'NAT Gateway', options:['NAT Gateway','Internet Gateway','VPC Endpoint','Security Group']}},
+{cat:'net', q:'¿Qué son VPC Endpoint y AWS PrivateLink?', a:'Permiten que recursos en tu VPC accedan a servicios de AWS (o terceros) sin salir a internet — el tráfico se queda dentro de la red de AWS.'},
+{cat:'net', q:'En la arquitectura de 3 capas recomendada por AWS, ¿dónde va la base de datos?', a:'En una subred privada (capa 3), accesible solo desde la capa de aplicación (capa 2). El Load Balancer va en la subred pública (capa 1).',
+  mc:{correct:'En una subred privada', options:['En una subred privada','En la subred pública junto al Load Balancer','Fuera de la VPC','En un Edge Location']}},
+
+// MIGRACIÓN
+{cat:'mig', q:'Nombra las 6 R\'s de migración.', a:'Rehost (lift & shift), Replatform, Repurchase, Refactor, Retire, Retain.'},
+{cat:'mig', q:'Una empresa quiere mover 200 servidores lo más rápido posible sin cambiar nada. ¿Estrategia y servicio?', a:'Rehost + AWS Application Migration Service (MGN).',
+  mc:{correct:'Rehost + AWS MGN', options:['Rehost + AWS MGN','Refactor + AWS Lambda','Repurchase + SaaS','Retire + eliminar servidores']}},
+{cat:'mig', q:'¿Qué métrica mide el tiempo máximo de inactividad tolerable tras un incidente?', a:'RTO (Recovery Time Objective). RPO mide, en cambio, la cantidad máxima de datos que puedes permitirte perder.', badge:'mnemo',
+  mc:{correct:'RTO (Recovery Time Objective)', options:['RTO (Recovery Time Objective)','RPO (Recovery Point Objective)','SLA (Service Level Agreement)','MTTR']}},
+{cat:'mig', q:'¿Cuáles son las 6 perspectivas del AWS Cloud Adoption Framework (CAF)?', a:'3 de negocio: Business, People, Governance. 3 técnicas: Platform, Security, Operations.', badge:'mnemo'},
+{cat:'mig', q:'¿Qué servicio migra bases de datos a AWS sin detener la operación?', a:'AWS DMS (Database Migration Service) — incluso entre motores distintos, usando Schema Conversion Tool. AWS MGN, en cambio, migra servidores/aplicaciones completos.',
+  mc:{correct:'AWS DMS', options:['AWS DMS','AWS MGN','AWS Migration Hub','AWS DataSync']}},
+{cat:'mig', q:'¿Qué servicio centraliza la visibilidad del progreso de tus migraciones (DMS, MGN, etc.) sin migrar datos directamente?', a:'AWS Migration Hub.',
+  mc:{correct:'AWS Migration Hub', options:['AWS Migration Hub','AWS CAF','AWS DMS','AWS Control Tower']}},
+{cat:'mig', q:'Ordena las estrategias de Disaster Recovery de menor a mayor costo/RTO.', a:'Backup & Restore (más barato, horas-días) → Pilot Light (decenas de minutos) → Warm Standby (minutos) → Multi-Site Active-Active (más caro, segundos).'},
+
+// SEGURIDAD
+{cat:'sec', q:'¿Cómo debe una instancia EC2 acceder de forma segura a S3?', a:'Con un Rol IAM asignado a la instancia — nunca guardando credenciales permanentes en el código.', badge:'rule',
+  mc:{correct:'Un Rol IAM asignado a la instancia', options:['Un Rol IAM asignado a la instancia','Guardar las credenciales en el código','Usar la contraseña root en la EC2','Desactivar los Security Groups']}},
+{cat:'sec', q:'¿Qué servicio detecta amenazas activas sin necesitar agentes instalados?', a:'Amazon GuardDuty — analiza VPC Flow Logs, CloudTrail y DNS logs automáticamente. Inspector escanea vulnerabilidades (con agente); Macie busca datos sensibles en S3.', badge:'trap',
+  mc:{correct:'Amazon GuardDuty', options:['Amazon GuardDuty','Amazon Inspector','Amazon Macie','AWS Config']}},
+{cat:'sec', q:'¿Qué servicio registra QUIÉN hizo QUÉ en tu cuenta AWS?', a:'AWS CloudTrail — audita llamadas a la API. AWS Config, en cambio, registra CÓMO están configurados los recursos.',
+  mc:{correct:'AWS CloudTrail', options:['AWS CloudTrail','AWS Config','Amazon CloudWatch','AWS Artifact']}},
+{cat:'sec', q:'¿Qué tipo de MFA YA NO es una opción válida en AWS?', a:'El MFA por SMS fue retirado. Sí son válidos: llaves FIDO físicas, apps TOTP y tokens de hardware TOTP.', badge:'trap',
+  mc:{correct:'SMS', options:['SMS','Llaves de seguridad físicas FIDO','Apps autenticadoras TOTP','Tokens de hardware TOTP']}},
+{cat:'sec', q:'¿Qué nivel de AWS Shield es gratuito y se activa automáticamente para todos los clientes?', a:'Shield Standard — protege contra los ataques DDoS más comunes en capas 3 y 4. Shield Advanced es de pago (~$3,000/mes) con respuesta dedicada 24/7.',
+  mc:{correct:'Shield Standard', options:['Shield Standard','Shield Advanced','AWS WAF','Amazon GuardDuty']}},
+{cat:'sec', q:'¿Qué servicio es un firewall de aplicación web en Capa 7 que protege contra SQL injection, XSS y bots?', a:'AWS WAF — se integra con CloudFront, ALB y API Gateway.',
+  mc:{correct:'AWS WAF', options:['AWS WAF','AWS Shield','Amazon GuardDuty','AWS Firewall Manager']}},
+{cat:'sec', q:'¿Qué servicio almacena y rota automáticamente credenciales (contraseñas de BD, API keys, tokens), eliminando contraseñas en código?', a:'AWS Secrets Manager.',
+  mc:{correct:'AWS Secrets Manager', options:['AWS Secrets Manager','AWS KMS','AWS Certificate Manager','AWS IAM']}},
+{cat:'sec', q:'¿Cuáles son los 6 pilares del AWS Well-Architected Framework?', a:'Operational Excellence, Security, Reliability, Performance Efficiency, Cost Optimization, y Sustainability (el 6°, añadido en 2021).', badge:'mnemo'},
+{cat:'sec', q:'¿Qué servicio es el portal para descargar reportes de cumplimiento (SOC 1/2/3, ISO 27001, PCI DSS, HIPAA) y acuerdos legales con AWS?', a:'AWS Artifact.',
+  mc:{correct:'AWS Artifact', options:['AWS Artifact','AWS Trusted Advisor','AWS Config','AWS CloudTrail']}},
+
+// INTEGRACIÓN Y AI/ML
+{cat:'integ', q:'¿Qué servicio usa el patrón pub/sub, enviando el mismo mensaje a múltiples suscriptores (fan-out)?', a:'Amazon SNS. Amazon SQS, en cambio, es una cola donde un consumidor procesa cada mensaje.',
+  mc:{correct:'Amazon SNS', options:['Amazon SNS','Amazon SQS','Amazon EventBridge','AWS Step Functions']}},
+{cat:'integ', q:'¿Qué servicio es un bus de eventos serverless que enruta eventos automáticamente a destinos según reglas (incluye integración con Salesforce, Zendesk)?', a:'Amazon EventBridge.',
+  mc:{correct:'Amazon EventBridge', options:['Amazon EventBridge','Amazon SNS','Amazon SQS','AWS Step Functions']}},
+{cat:'integ', q:'¿Qué servicio convierte texto en voz (text-to-speech)?', a:'Amazon Polly. Amazon Transcribe hace lo contrario: convierte voz en texto.', badge:'mnemo',
+  mc:{correct:'Amazon Polly', options:['Amazon Polly','Amazon Transcribe','Amazon Translate','Amazon Lex']}},
+{cat:'integ', q:'¿Qué servicio extrae texto y datos de formularios/tablas de documentos escaneados?', a:'Amazon Textract. No confundir con Rekognition, que analiza imágenes, objetos y rostros, no estructura de documentos.', badge:'trap',
+  mc:{correct:'Amazon Textract', options:['Amazon Textract','Amazon Rekognition','Amazon Comprehend','Amazon Kendra']}},
+{cat:'integ', q:'¿Qué servicio da acceso vía API a modelos fundacionales de IA generativa pre-entrenados?', a:'Amazon Bedrock (Titan/Nova de Amazon y modelos de terceros). SageMaker, en cambio, es para construir y entrenar tus propios modelos.',
+  mc:{correct:'Amazon Bedrock', options:['Amazon Bedrock','Amazon SageMaker','Amazon Lex','Amazon Comprehend']}},
+{cat:'integ', q:'¿Qué servicio recopila, procesa y analiza datos en streaming en tiempo real (millones de eventos por segundo, IoT, logs en vivo)?', a:'Amazon Kinesis.',
+  mc:{correct:'Amazon Kinesis', options:['Amazon Kinesis','AWS Glue','Amazon Athena','Amazon EMR']}},
+{cat:'integ', q:'¿Qué servicio de IA detecta sentimientos, entidades y temas en un texto (análisis de lenguaje natural)?', a:'Amazon Comprehend — por ejemplo, para analizar opiniones de clientes.',
+  mc:{correct:'Amazon Comprehend', options:['Amazon Comprehend','Amazon Translate','Amazon Textract','Amazon Lex']}},
+
+// DEVTOOLS Y GOBIERNO
+{cat:'dev', q:'Ordena el pipeline CI/CD nativo de AWS.', a:'AWS CodeCommit (código) → AWS CodeBuild (construcción) → AWS CodeDeploy (despliegue) → AWS CodePipeline (orquesta todo el flujo).'},
+{cat:'dev', q:'¿Qué estrategia de despliegue cambia el tráfico de golpe entre dos entornos idénticos?', a:'Blue/Green — más costoso, pero revierte en segundos si algo falla. Rolling actualiza servidores uno por uno.',
+  mc:{correct:'Blue/Green', options:['Blue/Green','Rolling','Canary','Recreate']}},
+{cat:'dev', q:'¿Qué herramienta usa código en Python/JS/etc. para generar templates de CloudFormation automáticamente?', a:'AWS CDK — capa de abstracción superior a CloudFormation, que usa JSON/YAML directamente.',
+  mc:{correct:'AWS CDK', options:['AWS CDK','AWS CloudFormation','AWS CLI','AWS SAM']}},
+{cat:'dev', q:'¿Qué es un "Stack" en CloudFormation?', a:'Un grupo de recursos de AWS creados juntos a partir de un template; si eliminas el stack, se eliminan todos sus recursos.',
+  mc:{correct:'Un grupo de recursos creados juntos desde un template', options:['Un grupo de recursos creados juntos desde un template','Un servidor físico dedicado','Una política de IAM','Un tipo de instancia EC2']}},
+{cat:'dev', q:'¿Qué gestiona múltiples cuentas AWS desde una cuenta central usando Service Control Policies (SCPs)?', a:'AWS Organizations — organiza las cuentas en OUs y permite facturación consolidada.',
+  mc:{correct:'AWS Organizations', options:['AWS Organizations','AWS Control Tower','AWS IAM Identity Center','AWS Config Rules']}},
+{cat:'dev', q:'¿Qué beneficio de AWS Organizations da una sola factura y comparte descuentos por volumen (además de RIs/Savings Plans) entre todas las cuentas?', a:'Facturación Consolidada.',
+  mc:{correct:'Facturación Consolidada de Organizations', options:['Facturación Consolidada de Organizations','AWS Budgets','Cost Explorer','AWS Marketplace']}},
+{cat:'dev', q:'¿Qué automatiza la configuración de entornos multi-cuenta con un "Landing Zone" preconfigurado?', a:'AWS Control Tower — aplica guardrails y usa Account Factory para crear cuentas nuevas ya configuradas.',
+  mc:{correct:'AWS Control Tower', options:['AWS Control Tower','AWS Organizations','AWS Config','AWS Trusted Advisor']}},
+{cat:'dev', q:'¿Qué tipo de guardrail BLOQUEA acciones que violan políticas (en vez de solo alertar)?', a:'Guardrail preventivo (usa SCPs). El guardrail detectivo, en cambio, alerta cuando la violación ya ocurrió (usa AWS Config Rules).', badge:'trap',
+  mc:{correct:'Guardrail preventivo', options:['Guardrail preventivo','Guardrail detectivo','Guardrail reactivo','Guardrail pasivo']}},
+{cat:'dev', q:'¿Qué servicio rastrea solicitudes en aplicaciones distribuidas y muestra dónde hay cuellos de botella?', a:'AWS X-Ray.',
+  mc:{correct:'AWS X-Ray', options:['AWS X-Ray','Amazon CloudWatch','AWS Config','AWS CloudTrail']}},
+
+// PRECIOS
+{cat:'price', q:'¿Cuáles son los 3 principios de precios de AWS?', a:'Pagas solo por lo que usas (pay-as-you-go), pagas menos al reservar, y pagas menos al escalar (economías de escala).'},
+{cat:'price', q:'¿Qué tipo de Free Tier nunca expira? (ej. Lambda 1M invocaciones/mes)', a:'Always Free. "12 Months Free" solo dura el primer año; "Trials" son periodos limitados al activar un servicio.',
+  mc:{correct:'Always Free', options:['Always Free','12 Months Free','Trials','Free Tier Plus']}},
+{cat:'price', q:'¿Las 750 horas/mes de EC2 t2.micro gratis son para siempre?', a:'No — son parte de "12 Months Free", disponible solo durante el primer año de la cuenta AWS.', badge:'trap',
+  mc:{correct:'No, es parte de 12 Months Free', options:['No, es parte de 12 Months Free','Sí, es Always Free permanente','Sí, pero solo en us-east-1','No, nunca fue gratis']}},
+{cat:'price', q:'¿Qué herramienta usas para ESTIMAR costos antes de crear un recurso?', a:'AWS Pricing Calculator.',
+  mc:{correct:'AWS Pricing Calculator', options:['AWS Pricing Calculator','AWS Cost Explorer','AWS Budgets','Cost Allocation Tags']}},
+{cat:'price', q:'¿Qué herramienta ALERTA cuando el gasto supera un límite definido?', a:'AWS Budgets. Cost Explorer, en cambio, sirve para analizar costos históricos.',
+  mc:{correct:'AWS Budgets', options:['AWS Budgets','AWS Cost Explorer','AWS Pricing Calculator','Cost & Usage Report']}},
+{cat:'price', q:'¿Qué herramienta da el reporte más granular de cada ítem de costo, entregado en S3?', a:'Cost & Usage Report (CUR). Cost Allocation Tags, en cambio, solo categoriza costos por proyecto/equipo.',
+  mc:{correct:'Cost & Usage Report (CUR)', options:['Cost & Usage Report (CUR)','Cost Allocation Tags','AWS Budgets','AWS Cost Explorer']}},
+{cat:'price', q:'¿Qué tienda digital te permite encontrar, comprar y desplegar software de terceros ya optimizado para AWS, cargándolo a tu factura?', a:'AWS Marketplace.',
+  mc:{correct:'AWS Marketplace', options:['AWS Marketplace','AWS Partner Network','AWS IQ','AWS Professional Services']}},
+
+// SOPORTE
+{cat:'support', q:'¿Cuál es el único plan de soporte que incluye un TAM (Technical Account Manager) dedicado?', a:'Enterprise Support (SLA <15 min para casos críticos).',
+  mc:{correct:'Enterprise Support', options:['Enterprise Support','Business Support','Enterprise On-Ramp','Developer Support']}},
+{cat:'support', q:'¿Cuántos checks de Trusted Advisor tienen Basic/Developer vs Business/Enterprise?', a:'Basic y Developer: solo 7 checks básicos. Business y Enterprise: acceso completo a más de 150 checks + API.',
+  mc:{correct:'Basic/Developer: 7 checks · Business/Enterprise: 150+', options:['Basic/Developer: 7 checks · Business/Enterprise: 150+','Todos los planes tienen 150+ checks','Solo Enterprise tiene checks','Basic tiene más checks que Business']}},
+{cat:'support', q:'¿Qué diferencia a Enterprise On-Ramp de Enterprise Support?', a:'Enterprise On-Ramp da acceso a un POOL de TAMs (no dedicado) y SLA <30 min. Enterprise tiene TAM dedicado y SLA <15 min.', badge:'trap',
+  mc:{correct:'On-Ramp: pool de TAMs, SLA <30min', options:['On-Ramp: pool de TAMs, SLA <30min','On-Ramp: TAM dedicado igual que Enterprise','On-Ramp no incluye TAMs','On-Ramp es más caro que Enterprise']}},
+{cat:'support', q:'¿Qué plan de soporte tiene SLA <1 hora 24/7 para casos críticos?', a:'Business Support. Developer tiene <12h en horario de negocio; Enterprise tiene <15min 24/7.',
+  mc:{correct:'Business', options:['Business','Developer','Basic','Enterprise On-Ramp']}},
+{cat:'support', q:'¿Qué es la red de socios tecnológicos y de consultoría certificados por AWS?', a:'AWS Partner Network (APN). AWS Professional Services es en cambio el equipo propio de expertos de AWS.',
+  mc:{correct:'AWS Partner Network (APN)', options:['AWS Partner Network (APN)','AWS Professional Services','AWS IQ','AWS Marketplace']}},
+{cat:'support', q:'¿Qué servicio es un marketplace para contratar expertos certificados en AWS para proyectos específicos?', a:'AWS IQ.',
+  mc:{correct:'AWS IQ', options:['AWS IQ','AWS Marketplace','AWS Partner Network','AWS Professional Services']}},
+{cat:'support', q:'¿El plan Basic de soporte tiene costo?', a:'No, es gratis, pero sin soporte técnico (solo facturación).',
+  mc:{correct:'Sí, gratis pero sin soporte técnico', options:['Sí, gratis pero sin soporte técnico','No, cuesta $29/mes mínimo','Sí, incluye soporte 24/7','No, solo para gobierno']}},
+];
+
+CARDS.forEach((c,i)=>{ c.id = i; });
+
+/* ---------------- STATE ---------------- */
+let state = {
+  activeCat: 'all',
+  deck: [],       // array of {card, mode, shuffledOptions}
+  index: 0,
+  flipped: false,
+  answered: false,
+  selectedIdx: null,
+  lastCorrect: null,
+  streak: 0,
+  bestStreak: 0,
+  masteredIds: new Set(),
+  reviewIds: new Set(),
+  sessionDone: false,
+};
+
+const MC_PROBABILITY = 0.55;
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+function buildDeckItems(catId){
+  const pool = catId === 'all' ? CARDS : CARDS.filter(c=>c.cat===catId);
+  const shuffledPool = shuffle(pool);
+  return shuffledPool.map(card => {
+    const useMc = !!card.mc && Math.random() < MC_PROBABILITY;
+    return {
+      card,
+      mode: useMc ? 'mc' : 'flip',
+      shuffledOptions: useMc ? shuffle(card.mc.options) : null,
+    };
+  });
+}
+
+function startDeck(catId, reviewOnly=false){
+  state.activeCat = catId;
+  let items;
+  if(reviewOnly){
+    const failedCards = CARDS.filter(c=>state.reviewIds.has(c.id));
+    items = shuffle(failedCards).map(card => {
+      const useMc = !!card.mc && Math.random() < MC_PROBABILITY;
+      return { card, mode: useMc ? 'mc' : 'flip', shuffledOptions: useMc ? shuffle(card.mc.options) : null };
+    });
+  } else {
+    items = buildDeckItems(catId);
+  }
+  state.deck = items;
+  state.index = 0;
+  state.flipped = false;
+  state.answered = false;
+  state.selectedIdx = null;
+  state.lastCorrect = null;
+  state.sessionDone = items.length === 0;
+  render();
+}
+
+function catName(id){
+  if(id==='all') return 'Todas';
+  const c = CATEGORIES.find(c=>c.id===id);
+  return c ? c.name : id;
+}
+
+function badgeLabel(b){
+  if(b==='trap') return '⚠️ Trampa común';
+  if(b==='mnemo') return '🧠 Mnemónico';
+  if(b==='rule') return '📌 Regla clave';
+  return null;
+}
+
+/* ---------------- ACTIONS ---------------- */
+function flipCard(){
+  if(state.sessionDone) return;
+  state.flipped = !state.flipped;
+  render();
+}
+
+function selectOption(idx){
+  if(state.answered) return;
+  const item = state.deck[state.index];
+  const chosenText = item.shuffledOptions[idx];
+  const isCorrect = chosenText === item.card.mc.correct;
+  state.answered = true;
+  state.selectedIdx = idx;
+  state.lastCorrect = isCorrect;
+  render();
+}
+
+function markCard(known){
+  const item = state.deck[state.index];
+  const card = item.card;
+  if(known){
+    state.masteredIds.add(card.id);
+    state.reviewIds.delete(card.id);
+    state.streak += 1;
+    state.bestStreak = Math.max(state.bestStreak, state.streak);
+  } else {
+    state.reviewIds.add(card.id);
+    state.masteredIds.delete(card.id);
+    state.streak = 0;
+  }
+  advance();
+}
+
+function nextAfterMc(){
+  markCard(state.lastCorrect);
+}
+
+function advance(){
+  state.flipped = false;
+  state.answered = false;
+  state.selectedIdx = null;
+  state.lastCorrect = null;
+  if(state.index + 1 >= state.deck.length){
+    state.sessionDone = true;
+  } else {
+    state.index += 1;
+  }
+  render();
+}
+
+function restartSame(){
+  startDeck(state.activeCat, false);
+}
+
+function reviewFailed(){
+  startDeck(state.activeCat, true);
+}
+
+/* ---------------- RENDER ---------------- */
+function render(){
+  const app = document.getElementById('app');
+  const total = state.deck.length;
+  const progressPct = total > 0 ? Math.min(100, Math.round((state.sessionDone ? total : state.index) / total * 100)) : 0;
+
+  const chips = CATEGORIES.map(c => `
+    <button class="chip ${state.activeCat===c.id?'active':''}" onclick="startDeck('${c.id}')">${c.name}</button>
+  `).join('');
+
+  let stageHtml = '';
+
+  if(total === 0){
+    stageHtml = `<div class="empty-note">No hay tarjetas marcadas "a repasar" todavía en esta categoría. ¡Sigue estudiando! 🎉</div>`;
+  } else if(state.sessionDone){
+    const deckMastered = state.deck.filter(it=>state.masteredIds.has(it.card.id)).length;
+    const deckReview = state.deck.filter(it=>state.reviewIds.has(it.card.id)).length;
+    const scorePct = total>0 ? Math.round((deckMastered/total)*100) : 0;
+    stageHtml = `
+      <div class="end-screen">
+        <div class="mono" style="color:var(--muted); font-size:0.75rem; letter-spacing:0.04em;">MAZO COMPLETADO — ${catName(state.activeCat)}</div>
+        <div class="big-score">${scorePct}%</div>
+        <p>${deckMastered} dominadas · ${deckReview} para repasar · racha máxima ${state.bestStreak}🔥</p>
+        <div class="end-actions">
+          ${deckReview > 0 ? `<button class="btn review-btn" onclick="reviewFailed()">😅 Repasar solo las falladas (${deckReview})</button>` : ''}
+          <button class="btn know-btn" onclick="restartSame()">🔀 Barajar y estudiar de nuevo</button>
+          <button class="btn ghost" onclick="startDeck('all')">Ver todas las categorías</button>
+        </div>
+      </div>
+    `;
+  } else {
+    const item = state.deck[state.index];
+    const card = item.card;
+
+    if(item.mode === 'mc'){
+      const optionsHtml = item.shuffledOptions.map((opt, idx) => {
+        let cls = 'mc-option';
+        if(state.answered){
+          const isCorrectOpt = opt === card.mc.correct;
+          if(isCorrectOpt) cls += ' correct-answer';
+          else if(idx === state.selectedIdx) cls += ' wrong-answer';
+          else cls += ' dimmed';
+        }
+        return `<button class="${cls}" ${state.answered?'disabled':''} onclick="selectOption(${idx})">${opt}</button>`;
+      }).join('');
+
+      const bLabel = badgeLabel(card.badge);
+      const feedbackHtml = state.answered ? `
+        <div class="mc-feedback">
+          <div class="verdict ${state.lastCorrect?'ok':'bad'}">${state.lastCorrect ? '✅ ¡Correcto!' : '❌ No era esa'}</div>
+          <div class="explain">${card.a}</div>
+          ${bLabel ? `<div class="badge-tag ${card.badge}">${bLabel}</div>` : ''}
+        </div>
+      ` : '';
+
+      stageHtml = `
+        <div class="mc-panel">
+          <span class="mc-mode-tag">Opción múltiple</span>
+          <div class="kicker">${catName(card.cat)} · Pregunta</div>
+          <div class="body-text">${card.q}</div>
+          <div class="mc-options">${optionsHtml}</div>
+          ${feedbackHtml}
+        </div>
+        ${state.answered ? `
+          <div class="controls">
+            <button class="btn next-btn" onclick="nextAfterMc()">Siguiente ➜</button>
+          </div>
+        ` : ''}
+        <div class="util-row">
+          <button onclick="startDeck(state.activeCat)">🔀 Barajar mazo</button>
+          <span class="mono" style="font-size:0.7rem; color:var(--muted-2);">${state.index+1} / ${total}</span>
+        </div>
+      `;
+    } else {
+      const bLabel = badgeLabel(card.badge);
+      stageHtml = `
+        <div class="stage">
+          <div class="card ${state.flipped?'flipped':''}" onclick="flipCard()">
+            <div class="face front">
+              <div class="kicker">${catName(card.cat)} · Pregunta</div>
+              <div class="body-text">${card.q}</div>
+              <div class="hint">Toca para voltear ↻</div>
+            </div>
+            <div class="face back">
+              <div class="kicker">Respuesta</div>
+              <div class="body-text">${card.a}</div>
+              ${bLabel ? `<div class="badge-tag ${card.badge}">${bLabel}</div>` : ''}
+            </div>
+          </div>
+        </div>
+        ${state.flipped ? `
+          <div class="controls">
+            <button class="btn review-btn" onclick="markCard(false)">😅 A repasar</button>
+            <button class="btn know-btn" onclick="markCard(true)">✅ Lo sabía</button>
+          </div>
+        ` : `
+          <div class="controls">
+            <button class="btn flip-btn" onclick="flipCard()">Voltear tarjeta</button>
+          </div>
+        `}
+        <div class="util-row">
+          <button onclick="startDeck(state.activeCat)">🔀 Barajar mazo</button>
+          <span class="mono" style="font-size:0.7rem; color:var(--muted-2);">${state.index+1} / ${total}</span>
+        </div>
+      `;
+    }
+  }
+
+  app.innerHTML = `
+    <header>
+      <div class="brand">
+        <h1>☁ AWS Cloud Practitioner</h1>
+        <p>Sala de estudio · basado en tu guía CLF-C02 (73 páginas)</p>
+        <div class="tag">${CARDS.length} tarjetas · 13 dominios · algunas en opción múltiple 🎲</div>
+      </div>
+      <div class="clf-badge mono">CLF-C02</div>
+    </header>
+
+    <div class="cat-scroll">
+      <button class="chip ${state.activeCat==='all'?'active':''}" onclick="startDeck('all')">Todas</button>
+      ${chips}
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <span class="num">${total>0?Math.min(state.index+1,total):0}/${total}</span>
+        <span class="lbl">Progreso</span>
+      </div>
+      <div class="stat streak">
+        <span class="num">${state.streak}🔥</span>
+        <span class="lbl">Racha actual</span>
+      </div>
+      <div class="stat mastered">
+        <span class="num">${state.masteredIds.size}</span>
+        <span class="lbl">Dominadas</span>
+      </div>
+      <div class="stat review">
+        <span class="num">${state.reviewIds.size}</span>
+        <span class="lbl">Por repasar</span>
+      </div>
+    </div>
+
+    <div class="progress-track">
+      <div class="progress-fill" style="width:${progressPct}%"></div>
+    </div>
+
+    ${stageHtml}
+  `;
+}
+
+/* init */
+startDeck('all');
+</script>
+</body>
+</html>
